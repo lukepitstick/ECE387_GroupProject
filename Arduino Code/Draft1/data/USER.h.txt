@@ -1,0 +1,13 @@
+#ifndef USER_H
+#define USER_H
+
+#include <Arduino.h>
+
+class USER{
+  public:
+    string username;
+    int[] password;
+};
+
+
+#endif

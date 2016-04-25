@@ -3,6 +3,8 @@
 //card 3: 7E 00 20 3B C6
 //card 4: 7E 00 20 3C B0
 
+#include <USER.h>
+
 //card values
 byte ref1[] = {0x7E,0x00,0x1F,0xF6,0xB4};
 byte ref2[] = {0x7E,0x00,0x1F,0xD9,0x32};
@@ -16,8 +18,21 @@ const int r2 = 10;
 const int r3 = 9;
 const int r4 = 8;
 
+//LCD Pins
+
+//Hook Pins
+
+//Keypad pins
+
+//other pins
+const int striker = 7; //CHANGE
+
 //Constants
 const int onTime = 2000;
+const int unlockTime = 7000;
+
+//operating variables
+boolean houseEmpty = false;
 
 void setup() {
   pinMode(green, OUTPUT); 
@@ -35,7 +50,28 @@ void loop () {
   byte checksum = 0;
   byte bytesread = 0;
   byte tempbyte = 0;
+  boolean verified = false;
+  
 
+  if(true){//HOOK CONDITION
+    houseEmpty = true;
+  }
+  else{
+    houseEmpty = false;
+  }
+
+  if(houseEmpty){
+    lock();
+    //LOCKED LCD HIGH
+  }
+  else{
+    unlock();
+    //LOCKED LCD LOW
+  }
+
+  
+  
+  //RFID Read
   if(Serial.available() > 0) {
     if((val = Serial.read()) == 2) {                  // check for header 
       bytesread = 0; 
@@ -70,76 +106,94 @@ void loop () {
         } 
       } 
 
-      // Output to Serial:
-      
+      //RFID has been read, process
       if (bytesread == 12) {         // if 12 digit read is complete
-        boolean flag1 = true;
-        boolean flag2 = true;
-        boolean flag3 = true;
-        boolean flag4 = true;
-        
-        Serial.print("5-byte code: ");
-        for (i=0; i<5; i++) {
-          if (code[i] < 16) Serial.print("0");
-          if (code[i] != ref1[i]) flag1 = false;
-          if (code[i] != ref2[i]) flag2 = false;
-          if (code[i] != ref3[i]) flag3 = false;
-          if (code[i] != ref4[i]) flag4 = false;
-          Serial.print(code[i], HEX);
-          Serial.print(" ");
-        }
-        if(flag1){
-          Serial.println("Card1: access granted");
-          digitalWrite(green,HIGH);
-          delay(onTime);
-          digitalWrite(green,LOW);
-        }
-        if(flag2){
-          Serial.println("Card2: access Denied");
-          digitalWrite(r1,HIGH);
-//          digitalWrite(r2,HIGH);
-//          digitalWrite(r3,HIGH);
-//          digitalWrite(r4,HIGH);
-          delay(onTime);
-          digitalWrite(r1,LOW);
-//          digitalWrite(r2,LOW);
-//          digitalWrite(r3,LOW);
-//          digitalWrite(r4,LOW);
-        }
-        if(flag3){
-          Serial.println("Card3: access Denied");
-          digitalWrite(r1,HIGH);
-//          digitalWrite(r2,HIGH);
-//          digitalWrite(r3,HIGH);
-//          digitalWrite(r4,HIGH);
-          delay(onTime);
-          digitalWrite(r1,LOW);
-//          digitalWrite(r2,LOW);
-//          digitalWrite(r3,LOW);
-//          digitalWrite(r4,LOW);
-        }
-        if(flag4){
-          Serial.println("Card4: access Denied");
-          digitalWrite(r1,HIGH);
-//          digitalWrite(r2,HIGH);
-//          digitalWrite(r3,HIGH);
-//          digitalWrite(r4,HIGH);
-          delay(onTime);
-          digitalWrite(r1,LOW);
-//          digitalWrite(r2,LOW);
-//          digitalWrite(r3,LOW);
-//          digitalWrite(r4,LOW);
-        }
-        
-        Serial.println();
-
-        Serial.print("Checksum: ");
-        Serial.print(code[5], HEX);
-        Serial.println(code[5] == checksum ? " -- passed." : " -- error.");
-        Serial.println();
+        verified = verifyRFID(code,checksum);
+        bytesread = 0;
       }
-
-      bytesread = 0;
     }
+  }//end of RFID read
+
+  if(verified & houseEmpty){
+    unlock();
+    //LCD WELCOME ___
+    delay(unlockTime);
+  }
+  else if(verified & !houseEmpty){
+    //LCD House is already unlocked
+  }
+  else if (!verified){
+    //LCD ACCESS DENIED
+  }
+  
+}//end of loop
+
+void unlock(){
+  digitalWrite(striker,LOW);
+  //something else here?
+}
+
+void lock(){
+  digitalWrite(striker,HIGH);
+}  
+
+boolean verifyRFID(int[] code, int checksum){
+  boolean flag1 = true;
+  boolean flag2 = true;
+  boolean flag3 = true;
+  boolean flag4 = true;
+        
+  Serial.print("5-byte code: ");
+  for (i=0; i<5; i++) {
+    if (code[i] < 16) Serial.print("0");
+    if (code[i] != ref1[i]) flag1 = false;
+    if (code[i] != ref2[i]) flag2 = false;
+    if (code[i] != ref3[i]) flag3 = false;
+    if (code[i] != ref4[i]) flag4 = false;
+    Serial.print(code[i], HEX);
+    Serial.print(" ");
+  }
+  if(flag1){
+    return true;
+//    Serial.println("Card1: access granted");
+//    digitalWrite(green,HIGH);
+//    delay(onTime);
+//    digitalWrite(green,LOW);
+  }
+  if(flag2){
+    return false;
+//    Serial.println("Card2: access Denied");
+//    digitalWrite(r1,HIGH);
+////          digitalWrite(r2,HIGH);
+////          digitalWrite(r3,HIGH);
+////          digitalWrite(r4,HIGH);
+//    delay(onTime);
+//    digitalWrite(r1,LOW);
+//          digitalWrite(r2,LOW);
+//          digitalWrite(r3,LOW);
+//          digitalWrite(r4,LOW);
+  }
+  if(flag3){
+    return false;
+//    Serial.println("Card3: access Denied");
+//    digitalWrite(r1,HIGH);
+//    delay(onTime);
+//    digitalWrite(r1,LOW);
+  }
+  if(flag4){
+    return false
+//    Serial.println("Card4: access Denied");
+//    digitalWrite(r1,HIGH);
+//    delay(onTime);
+//    digitalWrite(r1,LOW);
+  }
+
+  //print checksum,
+  Serial.println();
+  Serial.print("Checksum: ");
+  Serial.print(code[5], HEX);
+  Serial.println(code[5] == checksum ? " -- passed." : " -- error.");
+  Serial.println();
   }
 }
+
