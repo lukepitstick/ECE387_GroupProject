@@ -3,7 +3,8 @@
 //card 3: 7E 00 20 3B C6
 //card 4: 7E 00 20 3C B0
 
-#include <USER.h>
+//#include <USER.h>
+#include <LiquidCrystal.h>
 
 //card values
 byte ref1[] = {0x7E,0x00,0x1F,0xF6,0xB4};
@@ -11,21 +12,22 @@ byte ref2[] = {0x7E,0x00,0x1F,0xD9,0x32};
 byte ref3[] = {0x7E,0x00,0x20,0x3B,0xC6};
 byte ref4[] = {0x7E,0x00,0x20,0x3C,0xB0};
 
-//define pins
-const int green = 13;
-const int r1 = 11;
-const int r2 = 10;
-const int r3 = 9;
-const int r4 = 8;
+//define LED pins
+const int green = 2; //CHANGE
+const int r1 = 3;
 
 //LCD Pins
+LiquidCrystal lcd(4, 6, 10, 11, 12, 13); //CHANGE
+const int contrastPin = 5;
+const int pushButton1 = 7;
 
 //Hook Pins
+//Analog?
 
 //Keypad pins
 
 //other pins
-const int striker = 7; //CHANGE
+const int striker = 8; //CHANGE
 
 //Constants
 const int onTime = 2000;
@@ -35,12 +37,18 @@ const int unlockTime = 7000;
 boolean houseEmpty = false;
 
 void setup() {
+  //LCD
+  lcd.begin(16, 2);
+  lcd.home();
+  pinMode(contrastPin, OUTPUT);
+  pinMode(pushButton1, INPUT);
+  analogWrite(contrastPin, 100);
+
+  //LED's
   pinMode(green, OUTPUT); 
   pinMode(r1, OUTPUT); 
-  pinMode(r2, OUTPUT); 
-  pinMode(r3, OUTPUT); 
-  pinMode(r4, OUTPUT); 
-  Serial.begin(9600);                                 // connect to the serial port
+
+  Serial.begin(9600);  // connect to the serial port
 }
 
 void loop () {
@@ -62,13 +70,14 @@ void loop () {
 
   if(houseEmpty){
     lock();
-    //LOCKED LCD HIGH
+    digitalWrite(r1,HIGH);
+    digitalWrite(green,LOW);
   }
   else{
     unlock();
-    //LOCKED LCD LOW
+    digitalWrite(green,HIGH);
+    digitalWrite(r1,LOW);
   }
-
   
   
   //RFID Read
@@ -116,17 +125,24 @@ void loop () {
 
   if(verified & houseEmpty){
     unlock();
-    //LCD WELCOME ___
+    lcd.clear();
+    lcd.home();
+    lcd.print("WELCOME");
     delay(unlockTime);
   }
   else if(verified & !houseEmpty){
-    //LCD House is already unlocked
+    lcd.clear();
+    lcd.home();
+    lcd.print("HOUSE IS ALREADY UNLOCKED");
   }
   else if (!verified){
-    //LCD ACCESS DENIED
+    lcd.clear();
+    lcd.home();
+    lcd.print("ACCESS DENIED");
   }
   
 }//end of loop
+
 
 void unlock(){
   digitalWrite(striker,LOW);
