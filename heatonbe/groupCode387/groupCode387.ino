@@ -90,6 +90,16 @@ void loop () {
 //  lcd.clear();
 //  lcd.home();
 //  lcd.print("ACCESS DENIED");
+
+  //RGB LEDs
+  if(locked){
+    digitalWrite(RGB_R,HIGH);
+    digitalWrite(RGB_G,LOW);
+  }
+  else {
+    digitalWrite(RGB_R,LOW);
+    digitalWrite(RGB_G,HIGH);
+  }
   
   // HOOK STATES DECLARED; LEDs ON/OFF//RED
   //RED
