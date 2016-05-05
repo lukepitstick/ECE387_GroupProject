@@ -45,12 +45,13 @@ const char sR = A3;
 
 //other pins
 const int striker = 22; //DONE
-//const int speaker = 23; //WIRE
+const int speaker = 23;
 
 //Constants
 const int onTime = 2000; //PROBLEM AREA?
 const int lockTime = 5000;
 const int unlockTime = 7000;
+doorTime = 10000;
 int lockmillis;
 
 //operating variables
@@ -90,6 +91,15 @@ void loop () {
 //  lcd.clear();
 //  lcd.home();
 //  lcd.print("ACCESS DENIED");
+
+  int door = digitalRead(A5);
+  if(door == 1){
+    openTime = millis();
+    tone(speaker,3000);
+  }
+  else{
+    noTone(speaker);
+  }
 
   //RGB LEDs
   if(locked){
