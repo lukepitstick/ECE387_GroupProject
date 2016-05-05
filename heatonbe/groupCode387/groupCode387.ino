@@ -92,12 +92,10 @@ void loop () {
   // HOOK STATES DECLARED; LEDs ON/OFF//RED
   //RED
   if(digitalRead(sR)) { //OFF
-    //Serial.println("R OFF");
     digitalWrite(R, LOW);
     hR = false;
   }
   else { //ON
-    //Serial.println("ON");
     hR = true;
     digitalWrite(R, HIGH);
   }
@@ -139,6 +137,50 @@ void loop () {
     houseEmpty = true;
   }
 
+  //RFID Read
+  if(Serial.available() > 0) {
+    if((val = Serial.read()) == 2) {                  // check for header 
+      bytesread = 0; 
+      while (bytesread < 12) {                        // read 10 digit code + 2 digit checksum
+        if( Serial.available() > 0) { 
+          val = Serial.read();
+          if((val == 0x0D)||(val == 0x0A)||(val == 0x03)||(val == 0x02)) { // if header or stop bytes before the 10 digit reading 
+            break;                                    // stop reading
+          }
+
+          // Do Ascii/Hex conversion:
+          if ((val >= '0') && (val <= '9')) {
+            val = val - '0';
+          } else if ((val >= 'A') && (val <= 'F')) {
+            val = 10 + val - 'A';
+          }
+
+          // Every two hex-digits, add byte to code:
+          if (bytesread & 1 == 1) {
+            // make some space for this hex-digit by
+            // shifting the previous hex-digit with 4 bits to the left:
+            code[bytesread >> 1] = (val | (tempbyte << 4));
+
+            if (bytesread >> 1 != 5) {                // If we're at the checksum byte,
+              checksum ^= code[bytesread >> 1];       // Calculate the checksum... (XOR)
+            };
+          } else {
+            tempbyte = val;                           // Store the first hex digit first...
+          };
+
+          bytesread++;                                // ready to read next digit
+        } 
+      } 
+
+      //RFID has been read, process
+      if (bytesread == 12) {         // if 12 digit read is complete
+        verified = verifyRFID(code,checksum);
+        Serial.print(verified);
+        bytesread = 0;
+      }
+    }
+  }//end of RFID read
+
 //  if(houseEmpty){
 //    delay(lockTime);
 //    lock();
@@ -150,10 +192,6 @@ void loop () {
 //    digitalWrite(RGB_G,HIGH);
 //    digitalWrite(RGB_R,LOW);
 //  }
-  
-  
-  //RFID Read
-// }//end of RFID read
 
 //  if(verified & houseEmpty){
 //    unlock();
@@ -191,37 +229,28 @@ boolean verifyRFID(byte* code, int checksum){
   boolean flag3 = true;
   boolean flag4 = true;
 
-  Serial.print("5-byte code: ");
+//  Serial.print("5-byte code: ");
   for (int i=0; i<5; i++) {
-    if (code[i] < 16) Serial.print("0");
+//    if (code[i] < 16) Serial.print("0");
     if (code[i] != ref1[i]) flag1 = false;
     if (code[i] != ref2[i]) flag2 = false;
     if (code[i] != ref3[i]) flag3 = false;
     if (code[i] != ref4[i]) flag4 = false;
-    Serial.print(code[i], HEX);
-    Serial.print(" ");
+//    Serial.print("code: ");
+//    Serial.print(code[i], HEX);
+//    Serial.print(" ");
+
   }
   if(flag1){
     return true;
-//    Serial.println("Card1: access granted");
   }
   if(flag2){
     return false;
-//    Serial.println("Card2: access Denied");
   }
   if(flag3){
-    return false;
-//    Serial.println("Card3: access Denied");
+    return true;
   }
   if(flag4){
-    return false;
-//    Serial.println("Card4: access Denied");
+    return true;
   }
-
-  //print checksum,
-//  Serial.println();
-//  Serial.print("Checksum: ");
-//  Serial.print(code[5], HEX);
-//  Serial.println(code[5] == checksum ? " -- passed." : " -- error.");
-//  Serial.println();
 }
