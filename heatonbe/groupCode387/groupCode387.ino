@@ -54,6 +54,7 @@ const int unlockTime = 7000;
 
 //operating variables
 boolean houseEmpty = false;
+boolean locked = false; //change?
 
 void setup() {
   //LCD
@@ -83,6 +84,7 @@ void loop () {
   byte bytesread = 0;
   byte tempbyte = 0;
   boolean verified = false;
+  boolean scanned = false;
 //  Serial.println(digitalRead(sR));
 //  delay(200);
 //  lcd.clear();
@@ -130,10 +132,10 @@ void loop () {
 
   if(hR || hB || hG || hY){//HOOK CONDITION
     houseEmpty = false;
-    unlock();
+//    unlock();
   }
   else{
-    lock();
+//    lock();
     houseEmpty = true;
   }
 
@@ -175,52 +177,54 @@ void loop () {
       //RFID has been read, process
       if (bytesread == 12) {         // if 12 digit read is complete
         verified = verifyRFID(code,checksum);
-        Serial.print(verified);
+        scanned = true;
+//        Serial.print(verified);
         bytesread = 0;
       }
     }
   }//end of RFID read
 
-//  if(houseEmpty){
-//    delay(lockTime);
-//    lock();
-//    digitalWrite(RGB_R,HIGH);
-//    digitalWrite(RGB_G,LOW);
-//  }
-//  else{
-//    unlock();
-//    digitalWrite(RGB_G,HIGH);
-//    digitalWrite(RGB_R,LOW);
-//  }
-
-//  if(verified & houseEmpty){
-//    unlock();
-//    lcd.clear();
-//    lcd.home();
-//    lcd.print("WELCOME");
-//    delay(unlockTime);
-//  }
-//  else if(verified & !houseEmpty){
-//    lcd.clear();
-//    lcd.home();
-//    lcd.print("HOUSE IS ALREADY UNLOCKED");
-//  }
-//  else if (!verified){
-//    lcd.clear();
-//    lcd.home();
-//    lcd.print("ACCESS DENIED");
-//  }
-//  
+  if(scanned) {
+    if(verified & houseEmpty){
+      unlock();
+  //    lcd.clear();
+  //    lcd.home();
+  //    lcd.print("WELCOME");
+      delay(unlockTime);
+    }
+    else if(verified & !houseEmpty){
+      Serial.println("aready unlocked");
+  //    lcd.clear();
+  //    lcd.home();
+  //    lcd.print("HOUSE IS ALREADY UNLOCKED");
+    }
+    else if(!verified){
+  //    lcd.clear();
+  //    lcd.home();
+  //    lcd.print("ACCESS DENIED")
+    }
+  }//end of scanned
+  else{
+    if(houseEmpty){
+      if(!locked){
+        delay(lockTime);
+        lock();
+      }
+    }
+    else{
+      unlock(); //may be redundant
+    }
+  }
 }//end of loop
-
 
 void unlock(){
   digitalWrite(striker,HIGH);
-  //something else here?
+  locked = false;
 }
 
 void lock(){
   digitalWrite(striker,LOW);
+  locked = true;
 }  
 
 boolean verifyRFID(byte* code, int checksum){
