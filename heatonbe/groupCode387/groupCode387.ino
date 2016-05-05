@@ -51,10 +51,12 @@ const int striker = 22; //DONE
 const int onTime = 2000; //PROBLEM AREA?
 const int lockTime = 5000;
 const int unlockTime = 7000;
+int lockmillis;
 
 //operating variables
 boolean houseEmpty = false;
-boolean locked = false; //change?
+boolean locked = true; //change?
+boolean lockFlag = true;
 
 void setup() {
   //LCD
@@ -85,8 +87,6 @@ void loop () {
   byte tempbyte = 0;
   boolean verified = false;
   boolean scanned = false;
-//  Serial.println(digitalRead(sR));
-//  delay(200);
 //  lcd.clear();
 //  lcd.home();
 //  lcd.print("ACCESS DENIED");
@@ -138,7 +138,10 @@ void loop () {
 //    lock();
     houseEmpty = true;
   }
-
+//  if(!houseEmpty){
+//    unlock();
+//  }
+  
   //RFID Read
   if(Serial.available() > 0) {
     if((val = Serial.read()) == 2) {                  // check for header 
@@ -207,8 +210,22 @@ void loop () {
   else{
     if(houseEmpty){
       if(!locked){
-        delay(lockTime);
-        lock();
+//        if(hR) digitalWrite(R,HIGH);
+//        if(hY) digitalWrite(Y,HIGH);
+//        if(hG) digitalWrite(G,HIGH);
+//        if(hB) digitalWrite(Y,HIGH);
+//        delay(lockTime);
+        if(lockFlag){
+          lockmillis = millis();
+          lockFlag = false;
+        }
+        else{
+          int timetmp = (millis()-lockmillis);
+          if(timetmp > lockTime){
+            lock();
+            lockFlag = true;
+          }
+        }
       }
     }
     else{
