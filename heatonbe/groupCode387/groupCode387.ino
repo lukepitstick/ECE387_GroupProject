@@ -80,6 +80,7 @@ void setup() {
   pinMode(RGB_G, OUTPUT);
   pinMode(RGB_B, OUTPUT);
   Serial.begin(9600);  // connect to the serial port
+  Serial1.begin(9600);
 }
 
 void loop () {
@@ -96,34 +97,34 @@ void loop () {
 //  lcd.print("ACCESS DENIED");
 
   int door = digitalRead(A5);//what is A5
-  if(door == 1){
-    if(doorFlag){
-          doormillis = millis();
-          doorFlag = false;
-          noTone(speaker);
-        }
-        else{
-          unsigned long doortimetmp = (millis()-doormillis);
-          if(doortimetmp > doorTime){
-            speakertimetmp++;
-          }
-          if(speakertimetmp < 300 && speakertimetmp > 0){
-          tone(speaker,3000);
-          }else if(speakertimetmp < 600){
-            noTone(speaker);
-          }else if(speakertimetmp < 900){
-            tone(speaker,3000);
-          }else if(speakertimetmp < 20000) {
-           noTone(speaker); 
-          }else{
-            speakertimetmp = 0;
-          }
-  }
-  }
-  else{
-    noTone(speaker);
-    doorFlag=true;
-  }
+//  if(door == 1){
+//    if(doorFlag){
+//          doormillis = millis();
+//          doorFlag = false;
+//          noTone(speaker);
+//        }
+//        else{
+//          unsigned long doortimetmp = (millis()-doormillis);
+//          if(doortimetmp > doorTime){
+//            speakertimetmp++;
+//          }
+//          if(speakertimetmp < 300 && speakertimetmp > 0){
+//          tone(speaker,3000);
+//          }else if(speakertimetmp < 600){
+//            noTone(speaker);
+//          }else if(speakertimetmp < 900){
+//            tone(speaker,3000);
+//          }else if(speakertimetmp < 20000) {
+//           noTone(speaker); 
+//          }else{
+//            speakertimetmp = 0;
+//          }
+//  }
+//  }
+//  else{
+//    noTone(speaker);
+//    doorFlag=true;
+//  }
 
   //RGB LEDs
   if(locked){
@@ -180,17 +181,14 @@ void loop () {
 //    lock();
     houseEmpty = true;
   }
-//  if(!houseEmpty){
-//    unlock();
-//  }
   
   //RFID Read
-  if(Serial.available() > 0) {
-    if((val = Serial.read()) == 2) {                  // check for header 
+  if(Serial1.available() > 0) {
+    if((val = Serial1.read()) == 2) {                  // check for header 
       bytesread = 0; 
       while (bytesread < 12) {                        // read 10 digit code + 2 digit checksum
-        if( Serial.available() > 0) { 
-          val = Serial.read();
+        if( Serial1.available() > 0) { 
+          val = Serial1.read();
           if((val == 0x0D)||(val == 0x0A)||(val == 0x03)||(val == 0x02)) { // if header or stop bytes before the 10 digit reading 
             break;                                    // stop reading
           }
@@ -232,22 +230,23 @@ void loop () {
   if(scanned) {
     if(verified & houseEmpty){
       unlock();
-  //    lcd.clear();
-  //    lcd.home();
-  //    lcd.print("WELCOME");
-// /     delay(unlockTime);
+      lcd.clear();
+      lcd.home();
+      lcd.print("WELCOME");
+      tone(speaker,1000,500);
     }
     else if(verified & !houseEmpty){
       Serial.println("aready unlocked");
-  //    lcd.clear();
-  //    lcd.home();
-  //    lcd.print("HOUSE IS ALREADY UNLOCKED");
+      lcd.clear();
+      lcd.home();
+      lcd.print("HOUSE IS ALREADY UNLOCKED");
+      tone(speaker,1000,500);
     }
     else if(!verified){
       lcd.clear();
       lcd.home();
       lcd.print("ACCESS DENIED");
-      tone(speaker,500,3000);
+      tone(speaker,500,2000);
     }
   }//end of scanned
   else{
@@ -264,15 +263,17 @@ void loop () {
         }
         else{
           int timetmp = (millis()-lockmillis);
+          Serial.print("timetmp: ");
+          Serial.println(timetmp);
           if(timetmp > lockTime){
             lock();
             lockFlag = true;
           }
-          if(timetmp < 300 && timetmp > 1){
-            tone(speaker,3000);
-          }else if(timetmp < 301) {
-           noTone(speaker);
-          }
+//          if(timetmp < 300 && timetmp > 1){
+//            tone(speaker,3000);
+//          }else if(timetmp < 301) {
+//           noTone(speaker);
+//          }
         }
       }
     }
@@ -285,9 +286,6 @@ void loop () {
 void unlock(){
   digitalWrite(striker,HIGH);
   locked = false;
-  lcd.clear();
-  lcd.home();
-  lcd.print("Welcome");
 }
 
 void lock(){
