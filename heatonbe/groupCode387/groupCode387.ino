@@ -7,13 +7,13 @@
 #include <LiquidCrystal.h>
 
 //card values
-byte ref1[] = {0x7E,0x00,0x1F,0xF6,0xB4};
-byte ref2[] = {0x7E,0x00,0x1F,0xD9,0x32};
-byte ref3[] = {0x7E,0x00,0x20,0x3B,0xC6};
-byte ref4[] = {0x7E,0x00,0x20,0x3C,0xB0};
+byte ref1[] = {0x7E, 0x00, 0x1F, 0xF6, 0xB4};
+byte ref2[] = {0x7E, 0x00, 0x1F, 0xD9, 0x32};
+byte ref3[] = {0x7E, 0x00, 0x20, 0x3B, 0xC6};
+byte ref4[] = {0x7E, 0x00, 0x20, 0x3C, 0xB0};
 
 //define LED pins
-const int R = 13; //DONE 
+const int R = 13; //DONE
 const int G = 11;
 const int B = 12;
 const int Y = 10;
@@ -40,7 +40,7 @@ const char sG = A1; //were ints
 const char sB = A2;
 const char sR = A3;
 
-  
+
 //Keypad pins
 
 //other pins
@@ -51,7 +51,7 @@ const int speaker = 23;
 const int onTime = 2000; //PROBLEM AREA?
 const int lockTime = 5000;
 const int unlockTime = 7000;
-const int doorTime = 5000;
+const int doorTime = 5000; //change to 10000 after debug
 int lockmillis;
 unsigned long doormillis;
 
@@ -60,23 +60,25 @@ boolean houseEmpty = false;
 boolean locked = true; //change?
 boolean lockFlag = true;
 boolean doorFlag = true;
+boolean ajarDone = true;
 int speakertimetmp = 0;
 
 void setup() {
   //LCD
   lcd.begin(16, 2);
+  lcd.print("Apt. 387");
   pinMode(contrastPin, OUTPUT);
   analogWrite(contrastPin, 100);
 
   pinMode(striker, OUTPUT);
- // pinMode(speaker, OUTPUT); //CHANGE
+  // pinMode(speaker, OUTPUT); //CHANGE
 
   //LED's
   pinMode(R, OUTPUT);
   pinMode(G, OUTPUT);
   pinMode(B, OUTPUT);
   pinMode(Y, OUTPUT);
-  pinMode(RGB_R, OUTPUT);  
+  pinMode(RGB_R, OUTPUT);
   pinMode(RGB_G, OUTPUT);
   pinMode(RGB_B, OUTPUT);
   Serial.begin(9600);  // connect to the serial port
@@ -92,51 +94,68 @@ void loop () {
   byte tempbyte = 0;
   boolean verified = false;
   boolean scanned = false;
-//  lcd.clear();
-//  lcd.home();
-//  lcd.print("ACCESS DENIED");
+  //  lcd.clear();
+  //  lcd.home();
+  //  lcd.print("ACCESS DENIED");
 
-  int door = digitalRead(A5);//what is A5
-//  if(door == 1){
-//    if(doorFlag){
-//          doormillis = millis();
-//          doorFlag = false;
-//          noTone(speaker);
-//        }
-//        else{
-//          unsigned long doortimetmp = (millis()-doormillis);
-//          if(doortimetmp > doorTime){
-//            speakertimetmp++;
-//          }
-//          if(speakertimetmp < 300 && speakertimetmp > 0){
-//          tone(speaker,3000);
-//          }else if(speakertimetmp < 600){
-//            noTone(speaker);
-//          }else if(speakertimetmp < 900){
-//            tone(speaker,3000);
-//          }else if(speakertimetmp < 20000) {
-//           noTone(speaker); 
-//          }else{
-//            speakertimetmp = 0;
-//          }
-//  }
-//  }
-//  else{
-//    noTone(speaker);
-//    doorFlag=true;
-//  }
+  //lcd.print("Apt. 387");
+  //
+  //  if(lockFlag) {
+  //    lcd.clear();
+  //    lcd.home();
+  //    lcd.print("Apt. 387");
+  //  }
 
+
+  int door = digitalRead(A5);
+  Serial.println(door);
+  if (!door && ajarDone) {
+    doorFlag = true;
+  } //reset door ajar timer when door is closed
+  else {
+    if (doorFlag) {
+      doormillis = millis();
+      doorFlag = false;
+      ajarDone = false;
+    }
+    else {
+      int timetmpD = (millis() - doormillis);
+      //Serial.println("doormillis: "+doormillis);
+      Serial.print("timetmpDoor: ");
+      Serial.println(timetmpD);
+      if (timetmpD > doorTime) {
+        if (timetmpD < doorTime + 100) {
+          lcd.clear();
+          lcd.home();
+          lcd.print("DOOR AJAR");
+          Serial.println("door ajar ONCE");
+        }
+        if (!door) {
+          doorFlag = true;
+          ajarDone = true;
+          noTone(speaker);
+          lcd.clear();
+          lcd.home();
+          lcd.print("Apt. 387"); //done with loop
+        }
+        else {
+          //sound
+          tone(speaker, 3000);
+        }
+      }
+    }
+  }
   //RGB LEDs
-  if(locked){
-    color(255,0,0);
+  if (locked) {
+    color(255, 0, 0);
   }
   else {
-    color(0,0,255);
+    color(0, 0, 255);
   }
-  
+
   // HOOK STATES DECLARED; LEDs ON/OFF//RED
   //RED
-  if(digitalRead(sR)) { //OFF
+  if (digitalRead(sR)) { //OFF
     digitalWrite(R, LOW);
     hR = false;
   }
@@ -145,7 +164,7 @@ void loop () {
     digitalWrite(R, HIGH);
   }
   //BLUE
-  if(digitalRead(sB)) { //OFF
+  if (digitalRead(sB)) { //OFF
     digitalWrite(B, LOW);
     hB = false;
   }
@@ -154,7 +173,7 @@ void loop () {
     digitalWrite(B, HIGH);
   }
   //GREEN
-  if(digitalRead(sG)) { //OFF
+  if (digitalRead(sG)) { //OFF
     digitalWrite(G, LOW);
     hG = false;
   }
@@ -163,7 +182,7 @@ void loop () {
     digitalWrite(G, HIGH);
   }
   //YELLOW
-  if(digitalRead(sY)) { //OFF
+  if (digitalRead(sY)) { //OFF
     digitalWrite(Y, LOW);
     hY = false;
   }
@@ -171,27 +190,27 @@ void loop () {
     hY = true;
     digitalWrite(Y, HIGH);
   }
-  
 
-  if(hR || hB || hG || hY){//HOOK CONDITION
+
+  if (hR || hB || hG || hY) { //HOOK CONDITION
     houseEmpty = false;
     lockFlag = true;
-//    unlock();
+    //    unlock();
   }
-  else{
-//    lock();
+  else {
+    //    lock();
     //lockFlag = false;
     houseEmpty = true;
   }
-  
+
   //RFID Read
-  if(Serial1.available() > 0) {
-    if((val = Serial1.read()) == 2) {                  // check for header 
-      bytesread = 0; 
+  if (Serial1.available() > 0) {
+    if ((val = Serial1.read()) == 2) {                 // check for header
+      bytesread = 0;
       while (bytesread < 12) {                        // read 10 digit code + 2 digit checksum
-        if( Serial1.available() > 0) { 
+        if ( Serial1.available() > 0) {
           val = Serial1.read();
-          if((val == 0x0D)||(val == 0x0A)||(val == 0x03)||(val == 0x02)) { // if header or stop bytes before the 10 digit reading 
+          if ((val == 0x0D) || (val == 0x0A) || (val == 0x03) || (val == 0x02)) { // if header or stop bytes before the 10 digit reading
             break;                                    // stop reading
           }
 
@@ -216,122 +235,134 @@ void loop () {
           };
 
           bytesread++;                                // ready to read next digit
-        } 
-      } 
+        }
+      }
 
       //RFID has been read, process
       if (bytesread == 12) {         // if 12 digit read is complete
-        verified = verifyRFID(code,checksum);
+        verified = verifyRFID(code, checksum);
         scanned = true;
-//        Serial.print(verified);
+        //        Serial.print(verified);
         bytesread = 0;
       }
     }
   }//end of RFID read
 
-  if(scanned) {
-    if(verified & houseEmpty){
+  if (scanned) {
+    if (verified & houseEmpty) {
       unlock();
       lcd.clear();
       lcd.home();
       lcd.print("WELCOME");
-      tone(speaker,1000,500);
+      tone(speaker, 1000, 500);
+      delay(3000);
+      lcd.clear();
+      lcd.home();
+      lcd.print("Apt. 387");
     }
-    else if(verified & !houseEmpty){
+    else if (verified & !houseEmpty) {
       Serial.println("aready unlocked");
       lcd.clear();
       lcd.home();
-      lcd.print("HOUSE IS ALREADY UNLOCKED");
-      tone(speaker,1000,500);
+      lcd.print("ALREADY UNLOCKED");
+      tone(speaker, 1000, 500);
+      delay(3000);
+      lcd.clear();
+      lcd.home();
+      lcd.print("Apt. 387");
     }
-    else if(!verified){
+    else if (!verified) {
       lcd.clear();
       lcd.home();
       lcd.print("ACCESS DENIED");
-      tone(speaker,500,2000);
+      tone(speaker, 500, 2000);
+      delay(3000);
+      lcd.clear();
+      lcd.home();
+      lcd.print("Apt. 387");
     }
   }//end of scanned
-  else{
-    if(houseEmpty){
-      if(!locked){
-//        if(hR) digitalWrite(R,HIGH);
-//        if(hY) digitalWrite(Y,HIGH);
-//        if(hG) digitalWrite(G,HIGH);
-//        if(hB) digitalWrite(Y,HIGH);
-//        delay(lockTime);
-        if(lockFlag){
+  else {
+    if (houseEmpty) {
+      if (!locked) {
+        //        if(hR) digitalWrite(R,HIGH);
+        //        if(hY) digitalWrite(Y,HIGH);
+        //        if(hG) digitalWrite(G,HIGH);
+        //        if(hB) digitalWrite(Y,HIGH);
+        //        delay(lockTime);
+        if (lockFlag) {
           lockmillis = millis();
           lockFlag = false;
         }
-        else{
-          int timetmp = (millis()-lockmillis);
+        else {
+          int timetmp = (millis() - lockmillis);
           Serial.print("timetmp: ");
           Serial.println(timetmp);
-          if(timetmp > lockTime){
+          if (timetmp > lockTime) {
             lock();
             lockFlag = true;
+            lcd.clear();
+            lcd.home();
+            lcd.print("Apt. 387");
           }
-//          if(timetmp < 300 && timetmp > 1){
-//            tone(speaker,3000);
-//          }else if(timetmp < 301) {
-//           noTone(speaker);
-//          }
+          //          if(timetmp < 300 && timetmp > 1){
+          //            tone(speaker,3000);
+          //          }else if(timetmp < 301) {
+          //           noTone(speaker);
+          //          }
         }
       }
     }
-    else{
+    else {
       unlock(); //may be redundant
     }
   }
 }//end of loop
 
-void unlock(){
-  digitalWrite(striker,HIGH);
+void unlock() {
+  digitalWrite(striker, HIGH);
   locked = false;
 }
 
-void lock(){
-  digitalWrite(striker,LOW);
+void lock() {
+  digitalWrite(striker, LOW);
   locked = true;
-  lcd.clear();
-  lcd.home();
-  lcd.print("LOCKED");
-}  
+}
 
-boolean verifyRFID(byte* code, int checksum){
+boolean verifyRFID(byte* code, int checksum) {
   boolean flag1 = true;
   boolean flag2 = true;
   boolean flag3 = true;
   boolean flag4 = true;
 
-//  Serial.print("5-byte code: ");
-  for (int i=0; i<5; i++) {
-//    if (code[i] < 16) Serial.print("0");
+  //  Serial.print("5-byte code: ");
+  for (int i = 0; i < 5; i++) {
+    //    if (code[i] < 16) Serial.print("0");
     if (code[i] != ref1[i]) flag1 = false;
     if (code[i] != ref2[i]) flag2 = false;
     if (code[i] != ref3[i]) flag3 = false;
     if (code[i] != ref4[i]) flag4 = false;
-//    Serial.print("code: ");
-//    Serial.print(code[i], HEX);
-//    Serial.print(" ");
+    //    Serial.print("code: ");
+    //    Serial.print(code[i], HEX);
+    //    Serial.print(" ");
 
   }
-  if(flag1){
+  if (flag1) {
     return true;
   }
-  if(flag2){
+  if (flag2) {
     return false;
   }
-  if(flag3){
+  if (flag3) {
     return true;
   }
-  if(flag4){
+  if (flag4) {
     return true;
   }
 }
-void color (unsigned char red, unsigned char green, unsigned char blue) // the color generating function 
-{ 
-analogWrite(RGB_R, red); 
-analogWrite(RGB_G, green); 
-analogWrite(RGB_B, blue); 
+void color (unsigned char red, unsigned char green, unsigned char blue) // the color generating function
+{
+  analogWrite(RGB_R, red);
+  analogWrite(RGB_G, green);
+  analogWrite(RGB_B, blue);
 }
