@@ -51,19 +51,22 @@ const int speaker = 23;
 const int onTime = 2000; //PROBLEM AREA?
 const int lockTime = 5000;
 const int unlockTime = 7000;
-doorTime = 10000;
+const int doorTime = 5000;
 int lockmillis;
+unsigned long doormillis;
 
 //operating variables
 boolean houseEmpty = false;
 boolean locked = true; //change?
 boolean lockFlag = true;
+boolean doorFlag = true;
+int speakertimetmp = 0;
 
 void setup() {
   //LCD
-//  lcd.begin(16, 2);
-//  pinMode(contrastPin, OUTPUT);
-//  analogWrite(contrastPin, 100);
+  lcd.begin(16, 2);
+  pinMode(contrastPin, OUTPUT);
+  analogWrite(contrastPin, 100);
 
   pinMode(striker, OUTPUT);
  // pinMode(speaker, OUTPUT); //CHANGE
@@ -92,23 +95,42 @@ void loop () {
 //  lcd.home();
 //  lcd.print("ACCESS DENIED");
 
-  int door = digitalRead(A5);
+  int door = digitalRead(A5);//what is A5
   if(door == 1){
-    openTime = millis();
-    tone(speaker,3000);
+    if(doorFlag){
+          doormillis = millis();
+          doorFlag = false;
+          noTone(speaker);
+        }
+        else{
+          unsigned long doortimetmp = (millis()-doormillis);
+          if(doortimetmp > doorTime){
+            speakertimetmp++;
+          }
+          if(speakertimetmp < 300 && speakertimetmp > 0){
+          tone(speaker,3000);
+          }else if(speakertimetmp < 600){
+            noTone(speaker);
+          }else if(speakertimetmp < 900){
+            tone(speaker,3000);
+          }else if(speakertimetmp < 20000) {
+           noTone(speaker); 
+          }else{
+            speakertimetmp = 0;
+          }
+  }
   }
   else{
     noTone(speaker);
+    doorFlag=true;
   }
 
   //RGB LEDs
   if(locked){
-    digitalWrite(RGB_R,HIGH);
-    digitalWrite(RGB_G,LOW);
+    color(255,0,0);
   }
   else {
-    digitalWrite(RGB_R,LOW);
-    digitalWrite(RGB_G,HIGH);
+    color(0,0,255);
   }
   
   // HOOK STATES DECLARED; LEDs ON/OFF//RED
@@ -213,7 +235,7 @@ void loop () {
   //    lcd.clear();
   //    lcd.home();
   //    lcd.print("WELCOME");
-      delay(unlockTime);
+// /     delay(unlockTime);
     }
     else if(verified & !houseEmpty){
       Serial.println("aready unlocked");
@@ -222,9 +244,10 @@ void loop () {
   //    lcd.print("HOUSE IS ALREADY UNLOCKED");
     }
     else if(!verified){
-  //    lcd.clear();
-  //    lcd.home();
-  //    lcd.print("ACCESS DENIED")
+      lcd.clear();
+      lcd.home();
+      lcd.print("ACCESS DENIED");
+      tone(speaker,500,3000);
     }
   }//end of scanned
   else{
@@ -245,6 +268,11 @@ void loop () {
             lock();
             lockFlag = true;
           }
+          if(timetmp < 300 && timetmp > 1){
+            tone(speaker,3000);
+          }else if(timetmp < 301) {
+           noTone(speaker);
+          }
         }
       }
     }
@@ -257,11 +285,17 @@ void loop () {
 void unlock(){
   digitalWrite(striker,HIGH);
   locked = false;
+  lcd.clear();
+  lcd.home();
+  lcd.print("Welcome");
 }
 
 void lock(){
   digitalWrite(striker,LOW);
   locked = true;
+  lcd.clear();
+  lcd.home();
+  lcd.print("LOCKED");
 }  
 
 boolean verifyRFID(byte* code, int checksum){
@@ -294,4 +328,10 @@ boolean verifyRFID(byte* code, int checksum){
   if(flag4){
     return true;
   }
+}
+void color (unsigned char red, unsigned char green, unsigned char blue) // the color generating function 
+{ 
+analogWrite(RGB_R, red); 
+analogWrite(RGB_G, green); 
+analogWrite(RGB_B, blue); 
 }
