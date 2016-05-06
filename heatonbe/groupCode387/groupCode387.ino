@@ -51,7 +51,7 @@ const int speaker = 23;
 const int onTime = 2000; //PROBLEM AREA?
 const int lockTime = 5000;
 const int unlockTime = 7000;
-const int doorTime = 5000; //change to 10000 after debug
+const int doorTime = 10000; //change to 10000 after debug
 int lockmillis;
 unsigned long doormillis;
 
