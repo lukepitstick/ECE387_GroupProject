@@ -175,10 +175,12 @@ void loop () {
 
   if(hR || hB || hG || hY){//HOOK CONDITION
     houseEmpty = false;
+    lockFlag = true;
 //    unlock();
   }
   else{
 //    lock();
+    //lockFlag = false;
     houseEmpty = true;
   }
   
