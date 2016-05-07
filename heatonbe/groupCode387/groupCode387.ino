@@ -62,13 +62,14 @@ boolean lockFlag = true;
 boolean doorFlag = true;
 boolean ajarDone = true;
 int speakertimetmp = 0;
+int user;
 
 void setup() {
   //LCD
   lcd.begin(16, 2);
   lcd.print("Apt. 387");
   pinMode(contrastPin, OUTPUT);
-  analogWrite(contrastPin, 100);
+  analogWrite(contrastPin, 40);
 
   pinMode(striker, OUTPUT);
   // pinMode(speaker, OUTPUT); //CHANGE
@@ -83,6 +84,8 @@ void setup() {
   pinMode(RGB_B, OUTPUT);
   Serial.begin(9600);  // connect to the serial port
   Serial1.begin(9600);
+  
+  color(255,0,0);
 }
 
 void loop () {
@@ -129,6 +132,7 @@ void loop () {
           lcd.home();
           lcd.print("DOOR AJAR");
           Serial.println("door ajar ONCE");
+          color(255,255,255);
         }
         if (!door) {
           doorFlag = true;
@@ -137,6 +141,11 @@ void loop () {
           lcd.clear();
           lcd.home();
           lcd.print("Apt. 387"); //done with loop
+          if(locked) {
+            color(255,0,0);
+          }else{
+            color(0,0,255);
+          }
         }
         else {
           //sound
@@ -146,12 +155,12 @@ void loop () {
     }
   }
   //RGB LEDs
-  if (locked) {
-    color(255, 0, 0);
+  if (!houseEmpty && millis() > 100 && !door) {
+    color(0, 255, 0);
   }
-  else {
-    color(0, 0, 255);
-  }
+//  else if (locked) {
+//    color(255, 0, 0);
+//  }
 
   // HOOK STATES DECLARED; LEDs ON/OFF//RED
   //RED
@@ -240,7 +249,11 @@ void loop () {
 
       //RFID has been read, process
       if (bytesread == 12) {         // if 12 digit read is complete
-        verified = verifyRFID(code, checksum);
+        user = verifyRFID(code,checksum);
+      if(user != 0)
+        verified = true;
+        else
+        verified = false;
         scanned = true;
         //        Serial.print(verified);
         bytesread = 0;
@@ -254,6 +267,17 @@ void loop () {
       lcd.clear();
       lcd.home();
       lcd.print("WELCOME");
+      switch (user){
+        case 1:
+          lcd.print(" Luke");
+          break;
+        case 2: 
+          lcd.print(" Cameron");
+          break;
+        case 3:
+          lcd.print(" Zach");
+          break;
+      }
       tone(speaker, 1000, 500);
       delay(3000);
       lcd.clear();
@@ -322,14 +346,17 @@ void loop () {
 void unlock() {
   digitalWrite(striker, HIGH);
   locked = false;
+  if(houseEmpty)
+  color(0,0,255);
 }
 
 void lock() {
   digitalWrite(striker, LOW);
   locked = true;
+  color(255,0,0);
 }
 
-boolean verifyRFID(byte* code, int checksum) {
+int verifyRFID(byte* code, int checksum) {
   boolean flag1 = true;
   boolean flag2 = true;
   boolean flag3 = true;
@@ -348,16 +375,16 @@ boolean verifyRFID(byte* code, int checksum) {
 
   }
   if (flag1) {
-    return true;
+    return 1;
   }
   if (flag2) {
-    return false;
+    return 0;
   }
   if (flag3) {
-    return true;
+    return 2;
   }
   if (flag4) {
-    return true;
+    return 3;
   }
 }
 void color (unsigned char red, unsigned char green, unsigned char blue) // the color generating function
