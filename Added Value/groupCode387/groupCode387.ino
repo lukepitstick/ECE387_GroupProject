@@ -1,3 +1,5 @@
+
+
 //card 1: 7E 00 1F F6 B4
 //card 2: 7E 00 1F D9 32
 //card 3: 7E 00 20 3B C6
@@ -5,6 +7,33 @@
 
 //#include <USER.h>
 #include <LiquidCrystal.h>
+
+
+//keypad
+#include <Key.h>
+#include <Keypad.h>
+
+const byte numRows = 4; //number of rows on the keypad
+const byte numCols = 3; //number of columns on the
+char combo[4] = ""; //this is the users password attempt stored in an array
+char password[4] = {'3', '8', '7', '#'}; //this is the hardcoded password since its meant as a backup to get into a house
+boolean light[4] = {false, false, false, false}; //just a boolean array that stores comparison of user input and hardcoded password
+boolean keypadUse = false;
+
+char keymap[numRows][numCols] =
+{
+  {'1', '2', '3'},
+  {'4', '5', '6'},
+  {'7', '8', '9'},
+  {'*', '0', '#'}
+};
+
+//Code that shows the the keypad connections to the arduino terminals
+byte rowPins[numRows] = {26, 27, 28, 29}; //Rows 0 to 3 again utilizing the pins 34-40
+byte colPins[numCols] = {30, 31, 32}; //Columns 0 to 3 again utilizing the pins 26-32
+//Initializes the internal keymap to be equal to userKeymap and uses pins 6-9 as rows and 2-5 as columns
+Keypad keypad = Keypad(makeKeymap(keymap), rowPins, colPins, numRows, numCols); //initializes an instance of the Keypad class
+
 
 //card values
 byte ref1[] = {0x7E, 0x00, 0x1F, 0xF6, 0xB4};
@@ -84,8 +113,8 @@ void setup() {
   pinMode(RGB_B, OUTPUT);
   Serial.begin(9600);  // connect to the serial port
   Serial1.begin(9600);
-  
-  color(255,0,0);
+
+  color(255, 0, 0);
 }
 
 void loop () {
@@ -109,9 +138,13 @@ void loop () {
   //    lcd.print("Apt. 387");
   //  }
 
+  if (keypad.getKey() == '#') {
+    keypadUse = true;
+    Serial.println("Entered the keypad phrase");
+  }
 
   int door = digitalRead(A5);
-  Serial.println(door);
+  //Serial.println(door);
   if (!door && ajarDone) {
     doorFlag = true;
   } //reset door ajar timer when door is closed
@@ -124,15 +157,14 @@ void loop () {
     else {
       int timetmpD = (millis() - doormillis);
       //Serial.println("doormillis: "+doormillis);
-      Serial.print("timetmpDoor: ");
-      Serial.println(timetmpD);
+      //Serial.print("timetmpDoor: ");
+      //Serial.println(timetmpD);
       if (timetmpD > doorTime) {
         if (timetmpD < doorTime + 100) {
           lcd.clear();
           lcd.home();
           lcd.print("DOOR AJAR");
-          Serial.println("door ajar ONCE");
-          color(255,255,255);
+          color(255, 255, 255);
         }
         if (!door) {
           doorFlag = true;
@@ -141,10 +173,10 @@ void loop () {
           lcd.clear();
           lcd.home();
           lcd.print("Apt. 387"); //done with loop
-          if(locked) {
-            color(255,0,0);
-          }else{
-            color(0,0,255);
+          if (locked) {
+            color(255, 0, 0);
+          } else {
+            color(0, 0, 255);
           }
         }
         else {
@@ -158,9 +190,9 @@ void loop () {
   if (!houseEmpty && millis() > 100 && !door) {
     color(0, 255, 0);
   }
-//  else if (locked) {
-//    color(255, 0, 0);
-//  }
+  //  else if (locked) {
+  //    color(255, 0, 0);
+  //  }
 
   // HOOK STATES DECLARED; LEDs ON/OFF//RED
   //RED
@@ -249,11 +281,11 @@ void loop () {
 
       //RFID has been read, process
       if (bytesread == 12) {         // if 12 digit read is complete
-        user = verifyRFID(code,checksum);
-      if(user != 0)
-        verified = true;
+        user = verifyRFID(code, checksum);
+        if (user != 0)
+          verified = true;
         else
-        verified = false;
+          verified = false;
         scanned = true;
         //        Serial.print(verified);
         bytesread = 0;
@@ -266,12 +298,12 @@ void loop () {
       unlock();
       lcd.clear();
       lcd.home();
-      lcd.print("WELCOME");
-      switch (user){
+      lcd.print("Welcome");
+      switch (user) {
         case 1:
           lcd.print(" Luke");
           break;
-        case 2: 
+        case 2:
           lcd.print(" Cameron");
           break;
         case 3:
@@ -285,7 +317,7 @@ void loop () {
       lcd.print("Apt. 387");
     }
     else if (verified & !houseEmpty) {
-      Serial.println("aready unlocked");
+      //Serial.println("aready unlocked");
       lcd.clear();
       lcd.home();
       lcd.print("ALREADY UNLOCKED");
@@ -306,6 +338,161 @@ void loop () {
       lcd.print("Apt. 387");
     }
   }//end of scanned
+  else if (keypadUse) {
+    lockFlag = true;
+    lcd.clear();
+    lcd.home();
+    lcd.print("ENTER CODE:");
+    
+    if (keypad.getKey() == '*') {
+      Serial.println("exit");
+      keypadUse = false;
+      //return keypadUse;
+    }
+
+    char key = keypad.waitForKey();
+    if (key != NO_KEY)//NO_KEY is self explanatory
+    {
+      lcd.blink();
+      //----------------key 1 of the password-----------------------------
+      Serial.print("\nEnter KEY 1: ");
+      char key = keypad.waitForKey();
+      lcd.noBlink();
+      lcd.clear();
+      lcd.home();
+      lcd.print("ENTER CODE:*");
+      lcd.blink();
+      if (key == '*') {
+        keypadUse = false;
+        Serial.println("Exit keypad through '*'");
+        delay(500);
+        lcd.clear();
+        lcd.home();
+        lcd.print("Apt. 387");
+        lcd.noBlink();
+        return;
+      }
+      //digitalWrite(buttonLight,HIGH);
+      //delay(200);
+      //digitalWrite(buttonLight,LOW);
+      Serial.println(key);
+      combo[0] = key;
+      //----------------key 2 of the password-----------------------------
+      Serial.print("\nEnter KEY 2: ");
+      key = keypad.waitForKey();
+      lcd.noBlink();
+      lcd.clear();
+      lcd.home();
+      lcd.print("ENTER CODE:**");
+      lcd.blink();
+      if (key == '*') {
+        keypadUse = false;
+        Serial.println("Exit keypad through '*'");
+        delay(500);
+        lcd.clear();
+        lcd.home();
+        lcd.print("Apt. 387");
+        lcd.noBlink();
+        return;
+      }
+      //digitalWrite(buttonLight,HIGH);
+      //delay(200);
+      //digitalWrite(buttonLight,LOW);
+      Serial.println(key);
+      combo[1] = key;
+      //----------------key 3 of the password-----------------------------
+      Serial.print("\nEnter KEY 3: ");
+      key = keypad.waitForKey();
+      lcd.noBlink();
+      lcd.clear();
+      lcd.home();
+      lcd.print("ENTER CODE:***");
+      lcd.blink();
+      if (key == '*') {
+        keypadUse = false;
+        Serial.println("Exit keypad through '*'");
+        delay(500);
+        lcd.clear();
+        lcd.home();
+        lcd.print("Apt. 387");
+        lcd.noBlink();
+        return;
+      }
+      //digitalWrite(buttonLight,HIGH);
+      //delay(200);
+      //digitalWrite(buttonLight,LOW);
+      Serial.println(key);
+      combo[2] = key;
+      //----------------key 4 of the password-----------------------------
+      Serial.print("\nEnter KEY 4: ");
+      key = keypad.waitForKey();
+      lcd.noBlink();
+      lcd.clear();
+      lcd.home();
+      lcd.print("ENTER CODE:****");
+      lcd.blink();
+      if (key == '*') {
+        keypadUse = false;
+        Serial.println("Exit keypad through '*'");
+        delay(500);
+        lcd.clear();
+        lcd.home();
+        lcd.print("Apt. 387");
+        lcd.noBlink();
+        return;
+      }
+      //digitalWrite(buttonLight,HIGH);
+      //delay(200);
+      //digitalWrite(buttonLight,LOW);
+      Serial.println(key);
+      combo[3] = key;
+      //-----------------------------------------------------
+      for (int i = 0; i < 4; i++) { //WHAT IS THIS
+        Serial.print(combo[i] );
+        if (combo[i] == password[i]) //compares users input to hardcoded password and sets each char comparison true or false
+          light[i] = true;
+        else
+          light[i] = false;
+      }
+      //if all light code is true, then unlock door
+      if (light[0] && light[1] && light[2] && light[3]) { //if password is correct then turn on light and call servoResponse
+        Serial.println("\nPassword Correct");
+        keypadUse = false;
+        lcd.noBlink();
+        lcd.clear();
+        lcd.home();
+        lcd.print("ACCESS GRANTED");
+        delay(1500);
+        lcd.clear();
+        lcd.home();
+        lcd.print("WELCOME");
+        unlock();
+        tone(speaker, 1000, 500);
+        delay(3000);
+        lcd.clear();
+        lcd.home();
+        lcd.print("Apt. 387");
+        //return false;
+      }
+
+      else {
+        Serial.println("\nAccess Denied");
+        keypadUse = false;
+        lcd.noBlink();
+        lcd.clear();
+        lcd.home();
+        lcd.print("ACCESS DENIED");
+        tone(speaker, 500, 2000);
+        delay(3000);
+        lcd.clear();
+        lcd.home();
+        lcd.print("Apt. 387");
+        //return false;
+      }
+    }
+    else
+      Serial.println("else loop");
+  }
   else {
     if (houseEmpty) {
       if (!locked) {
@@ -320,8 +507,8 @@ void loop () {
         }
         else {
           int timetmp = (millis() - lockmillis);
-          Serial.print("timetmp: ");
-          Serial.println(timetmp);
+          //Serial.print("timetmp: ");
+          // Serial.println(timetmp);
           if (timetmp > lockTime) {
             lock();
             lockFlag = true;
@@ -341,19 +528,20 @@ void loop () {
       unlock(); //may be redundant
     }
   }
+
 }//end of loop
 
 void unlock() {
   digitalWrite(striker, HIGH);
   locked = false;
-  if(houseEmpty)
-  color(0,0,255);
+  if (houseEmpty)
+    color(0, 0, 255);
 }
 
 void lock() {
   digitalWrite(striker, LOW);
   locked = true;
-  color(255,0,0);
+  color(255, 0, 0);
 }
 
 int verifyRFID(byte* code, int checksum) {
